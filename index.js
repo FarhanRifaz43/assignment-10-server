@@ -1,6 +1,6 @@
 const cors = require('cors');
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -31,18 +31,45 @@ async function run() {
     const productCollection = client.db('productDB').collection('products')
 
 
-    app.post('/products', async(req, res) => {
+    app.post('/products', async (req, res) => {
       const newProduct = req.body
       const result = await productCollection.insertOne(newProduct);
       res.send(result);
     })
 
-    app.get('/products', async(req, res) => {
+    app.get('/products', async (req, res) => {
       const cursor = productCollection.find();
       const result = await cursor.toArray();
       res.send(result)
     })
 
+    app.get('/products/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await productCollection.findOne(query);
+      res.send(result)
+    })
+
+    app.put('/products/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedProduct = req.body;
+      const modProduct = {
+        $set: {
+          image: updatedProduct.image,
+          name: updatedProduct.name,
+          brand: updatedProduct.brand,
+          type: updatedProduct.type,
+          price: updatedProduct.price,
+          rating: updatedProduct.rating,
+          description: updatedProduct.description
+        }
+      };
+
+      const result = await productCollection.updateOne(filter, modProduct, options);
+      res.send(result);
+    })
 
 
     // Send a ping to confirm a successful connection
@@ -57,10 +84,10 @@ run().catch(console.dir);
 
 
 
-app.get('/', (req, res) =>{
-    res.send("server is running")
+app.get('/', (req, res) => {
+  res.send("server is running")
 })
 
 app.listen(port, () => {
-    console.log(`server is running on ${port}`)
+  console.log(`server is running on ${port}`)
 })
